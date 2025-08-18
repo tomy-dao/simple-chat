@@ -4,9 +4,9 @@ import ChatComponent from './components/Chat';
 import auth from './clients/auth';
 import { newSocket } from './lib/socket';
 import { DefaultEvent } from './lib/socket/socket';
+import { config } from './config';
 
-
-export const socket = newSocket("ws://localhost:8080/chat");
+export const socket = newSocket(config.socketUrl);
 
 function App() {
   const [user, setUser] = useState(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);

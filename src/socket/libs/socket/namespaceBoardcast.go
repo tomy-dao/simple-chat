@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/google/uuid"
@@ -97,14 +96,12 @@ func (n *namespaceBroadcast) Emit(event string, message any) {
 	skMap := n.GetSocketSelected()
 
 	withoutConnectIds := make(map[string]struct{})
-	fmt.Println(n.withoutConns, "n.withoutConns")
 	for _, conn := range n.withoutConns {
-		fmt.Println(conn, "conn")
 		if conn != "" {
 			withoutConnectIds[conn] = empty
 		}
 	}
-	fmt.Println(withoutConnectIds, "withoutConnectIds")
+
 	for _, room := range n.withoutRooms {
 		skStore := n.namespaceStore.
 			Get(n.namespace).
@@ -130,10 +127,8 @@ func (n *namespaceBroadcast) Emit(event string, message any) {
 			continue
 		}
 		if _, ok := withoutConnectIds[sk.GetId()]; ok {
-			fmt.Println(sk.GetId(), "sk.GetId()")
 			continue
 		}
-		fmt.Println(sk.GetId(), "sk.GetId()")
 		sk.Emit(event, message)
 	}
 }

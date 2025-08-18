@@ -1,32 +1,24 @@
 package cmd
 
 import (
+	"fmt"
+	"local/config"
 	"local/event"
 	"local/libs/socket"
 	Router "local/router"
 	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 func Run() {
+	config.LoadConfig()
 	router := http.NewServeMux()
-
-	router.HandleFunc("/check", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"health_check":"OK"}`))
-	})
 
 	socketServer := socket.NewServer(router)
 	event.RegisterEvent(socketServer)
 	Router.Register(router, socketServer)
-
-	viper.AutomaticEnv()
-	port := "8080"
-	host := "0.0.0.0"
-	// port := viper.GetString("PORT")
-	// host := viper.GetString("HOST")
-	log.Println("Server running", port)
-	http.ListenAndServe(host+":"+port, router)
+	log.Println(fmt.Sprintf("Server is running on host %s and port %d", config.Config.Host, config.Config.HTTPPort))
+	http.ListenAndServe(config.Config.Host+":"+strconv.Itoa(config.Config.HTTPPort), router)
 }

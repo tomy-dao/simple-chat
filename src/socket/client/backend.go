@@ -2,11 +2,12 @@ package client
 
 import (
 	"encoding/json"
+	"local/config"
 	"net/http"
 )
 
 func GetMe(token string) (any, error) {
-	req, err := http.NewRequest("GET", "http://localhost:8080/me", nil)
+	req, err := http.NewRequest("GET", config.Config.BackendServerURL+"/me", nil)
 	if err != nil {
 		return nil, err
 	}

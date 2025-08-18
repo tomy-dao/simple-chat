@@ -67,8 +67,6 @@ func (h *handle) Broadcast(w http.ResponseWriter, r *http.Request) {
 		rooms[i] = fmt.Sprintf("%d", userId)
 	}
 
-	fmt.Println(rooms)
-
 	h.socketServer.
 		Broadcast().
 		Of(event.ChatPath).

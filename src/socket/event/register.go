@@ -33,7 +33,7 @@ func RegisterEvent(socketServer SK.Server) {
 				socket.Emit("authenticate_fail", nil)
 				return
 			}
-			fmt.Println(claims, "claims")
+
 			sessionId := claims["session_id"].(string)
 			userId, ok := claims["user_id"].(float64)
 			if ok {
