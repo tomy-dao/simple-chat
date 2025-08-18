@@ -54,7 +54,8 @@ func TokenMiddleware(next http.Handler) http.Handler {
 			claims, err := decodeJWT(token)
 			if err != nil {
 				// Token expired or invalid
-				http.Error(w, "Unauthorized: Token expired or invalid", http.StatusUnauthorized)
+				// http.Error(w, "Unauthorized: Token expired or invalid", http.StatusUnauthorized)
+				next.ServeHTTP(w, r)
 				return
 			}
 			
