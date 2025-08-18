@@ -16,6 +16,7 @@ type handler struct {
 
 func getToken(r *http.Request) string {
 	token := r.Header.Get("Authorization")
+	fmt.Println("token", token)
 	if token == "" {
 		return ""
 	}

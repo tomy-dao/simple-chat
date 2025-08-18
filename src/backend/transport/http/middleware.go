@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -49,13 +50,12 @@ func TokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := getToken(r)
 		// Add token to request context
+		fmt.Println("token", token)
 		if token != "" {
 			// Parse token to extract user_id and session_id
 			claims, err := decodeJWT(token)
 			if err != nil {
-				// Token expired or invalid
-				// http.Error(w, "Unauthorized: Token expired or invalid", http.StatusUnauthorized)
-				next.ServeHTTP(w, r)
+				http.Error(w, "Unauthorized: Token expired or invalid", http.StatusUnauthorized)
 				return
 			}
 			
