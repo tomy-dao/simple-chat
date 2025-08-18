@@ -24,7 +24,7 @@ const AuthContainer = ({ onAuthSuccess }) => {
   const handleRegister = async (registerData) => {
     try {
       const {data: user} = await auth.register(registerData);
-      const {data: token} = await auth.login(registerData);
+      const {data: { token }} = await auth.login(registerData);
       
       // Store token in localStorage
       localStorage.setItem('authToken', token);
