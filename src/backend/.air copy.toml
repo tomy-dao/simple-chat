@@ -1,0 +1,8 @@
+[build]
+  bin = "./tmp/main"
+  cmd = "go build -o ./tmp/main"
+  include_ext = ["go"]
+  exclude_dir = ["vendor"]
+  kill_on_exit = true
+  kill_timeout = 100
+  log = "debug"
