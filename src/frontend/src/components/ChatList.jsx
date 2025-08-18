@@ -32,7 +32,6 @@ const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, 
   const handleUserSelect = async (userId) => {
     try {
       const { data: conversation } = await chat.getConversationByUserId(userId);
-      console.log(conversation);
       onConversationSelect(conversation.id);
       const userIdSelected = conversation.user_ids.find(
         (uId) => uId == userId

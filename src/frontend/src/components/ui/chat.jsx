@@ -152,7 +152,7 @@ export function Chat({
           <MessageInput
             value={input}
             onChange={handleInputChange}
-            allowAttachments
+            allowAttachments={false}
             files={files}
             setFiles={setFiles}
             stop={handleStop}

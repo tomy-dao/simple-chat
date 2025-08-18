@@ -250,7 +250,7 @@ export function MessageInput({
             size="icon"
             className="h-8 w-8 transition-opacity"
             aria-label="Send message"
-            disabled={props.value === "" || isGenerating}>
+            disabled={props.value?.trim() === "" || isGenerating}>
             <ArrowUp className="h-5 w-5" />
           </Button>
         )}

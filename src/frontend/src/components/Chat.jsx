@@ -24,7 +24,7 @@ export function ChatComponent({ onLogout, user, connectId }) {
     setMessages([...messages, messageTerminated]);
     setInput("");
     const { data: message } = await chat.sendMessage(conversationId, {
-      content: input,
+      content: messageTerminated.content,
       session_id: connectId,
     });
     setMessages((prevMessages) => {
@@ -51,11 +51,12 @@ export function ChatComponent({ onLogout, user, connectId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input) return;
+    if (!input.trim()) return;
+
     const messageTerminated = {
       id: `message-terminated-${count++}`,
       role: "user",
-      content: input,
+      content: input.trim(),
     };
     if (conversationId) {
       sendMessageWhenConversationSelected(conversationId, messageTerminated);
@@ -74,6 +75,7 @@ export function ChatComponent({ onLogout, user, connectId }) {
           id: message.id,
           role: user.id === message.sender_id ? "user" : "assistant",
           content: message.content,
+          // createdAt: new Date(message.created_at),
         }))
         .reverse()
     );
@@ -128,7 +130,8 @@ export function ChatComponent({ onLogout, user, connectId }) {
       {!conversationId?.toString() && !userId?.toString() ? (
         <div className="flex-1 h-full border rounded-lg pt-4 bg-white flex items-center justify-center">
           <p className="text-center text-gray-500 text-2xl">
-            Select a conversation to start chatting
+            Select a conversation to start chatting <br />
+            or choose a user to start a new conversation
           </p>
         </div>
       ) : (
