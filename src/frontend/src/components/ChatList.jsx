@@ -21,10 +21,23 @@ const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, 
     setUsers(users);
   };
 
+  const handleConversationSelect = async (conversation) => {
+    onConversationSelect(conversation.id);
+    const userSelected = conversation.user_ids.find(
+      (uId) => uId !== user.id
+    );
+    onUserSelect(userSelected || user.id);
+  };
+
   const handleUserSelect = async (userId) => {
     try {
       const { data: conversation } = await chat.getConversationByUserId(userId);
+      console.log(conversation);
       onConversationSelect(conversation.id);
+      const userIdSelected = conversation.user_ids.find(
+        (uId) => uId == userId
+      );
+      onUserSelect(userIdSelected);
     } catch {
       onUserSelect(userId);
     }
@@ -84,7 +97,7 @@ const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, 
                 <div
                   key={conversation.id}
                   className={`p-3 hover:bg-gray-50 rounded-lg cursor-pointer border-l-4 bg-blue-50 ${conversation.id === conversationId ? "border-blue-500" : ""}`}
-                  onClick={() => onConversationSelect(conversation.id)}
+                  onClick={() => handleConversationSelect(conversation)}
                 >
                   <div className="font-medium text-sm text-gray-800">
                     {conversation.participants.find(

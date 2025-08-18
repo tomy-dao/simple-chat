@@ -12,7 +12,7 @@ import { FilePreview } from "@/components/ui/file-preview"
 import { InterruptPrompt } from "@/components/ui/interrupt-prompt"
 
 export function MessageInput({
-  placeholder = "Ask AI...",
+  placeholder = "Type your message here...",
   className,
   onKeyDown: onKeyDownProp,
   submitOnEnter = true,

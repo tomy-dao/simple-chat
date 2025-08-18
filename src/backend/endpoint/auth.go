@@ -33,10 +33,6 @@ type GetMeRequest struct {
 	Token string `json:"token"`
 }
 
-type GetMeResponse struct {
-	Token string `json:"token"`
-}
-
 func (e *AuthEndpoints) Authenticate(ctx context.Context) (uint, error) {
 	userID, err := e.authService.Authenticate(ctx)
 	if err != nil {

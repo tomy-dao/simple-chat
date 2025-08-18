@@ -3,6 +3,7 @@ import { Chat } from "@/components/ui/chat";
 import ChatList from "@/components/ChatList";
 import chat from "@/clients/chat";
 import { socket } from "@/App";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 let count = 2;
 
@@ -16,7 +17,10 @@ export function ChatComponent({ onLogout, user, connectId }) {
     setInput(e.target.value);
   };
 
-  const sendMessageWhenConversationSelected = async (conversationId, messageTerminated) => {
+  const sendMessageWhenConversationSelected = async (
+    conversationId,
+    messageTerminated
+  ) => {
     setMessages([...messages, messageTerminated]);
     setInput("");
     const { data: message } = await chat.sendMessage(conversationId, {
@@ -63,20 +67,20 @@ export function ChatComponent({ onLogout, user, connectId }) {
   const handleConversationSelect = async (conversationId) => {
     setConversationId(conversationId);
     setMessages([]);
-    setUserId(null);
     const { data: messages } = await chat.getMessages(conversationId);
     setMessages(
-      messages.map((message) => ({
-        id: message.id,
-        role: user.id === message.sender_id ? "user" : "assistant",
-        content: message.content,
-      })).reverse()
+      messages
+        .map((message) => ({
+          id: message.id,
+          role: user.id === message.sender_id ? "user" : "assistant",
+          content: message.content,
+        }))
+        .reverse()
     );
   };
 
   const handleUserSelect = (userId) => {
     setUserId(userId);
-    setConversationId(null);
     setMessages([]);
   };
 
@@ -84,11 +88,14 @@ export function ChatComponent({ onLogout, user, connectId }) {
     if (!conversationId) return;
     const msgSignal = socket.on("message", ({ message }) => {
       if (message.conversation_id == conversationId) {
-        setMessages((prevMessages) => [...prevMessages, {
-          id: message.id,
-          role: user.id === message.sender_id ? "user" : "assistant",
-          content: message.content,
-        }]);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: message.id,
+            role: user.id === message.sender_id ? "user" : "assistant",
+            content: message.content,
+          },
+        ]);
       }
     });
 
@@ -118,17 +125,22 @@ export function ChatComponent({ onLogout, user, connectId }) {
         onConversationSelect={handleConversationSelect}
         onUserSelect={handleUserSelect}
       />
-      <Chat
-        className="flex-1 h-full border rounded-lg pt-4 bg-white"
-        messages={messages}
-        input={input}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-        isGenerating={false}
-        stop={stop}
-        setMessages={setMessages}
-        isTyping={false}
-      />
+      {!conversationId?.toString() && !userId?.toString() ? (
+        <div className="flex-1 h-full border rounded-lg pt-4 bg-white flex items-center justify-center">
+          <p className="text-center text-gray-500 text-2xl">
+            Select a conversation to start chatting
+          </p>
+        </div>
+      ) : (
+        <Chat
+          className="flex-1 h-full border rounded-lg pt-4 bg-white"
+          messages={messages}
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          setMessages={setMessages}
+        />
+      )}
     </div>
   );
 }

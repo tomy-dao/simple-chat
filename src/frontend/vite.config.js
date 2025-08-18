@@ -27,15 +27,5 @@ export default defineConfig((mode) => {
     build: {
       assetsInlineLimit: 0 // Disable inlining for stricter CSP
     },
-    server: {
-      headers: {
-        'Content-Security-Policy': `
-          default-src 'self';
-          script-src 'self' 'unsafe-eval';
-          style-src 'self' 'unsafe-inline';
-          connect-src 'self' ws: wss: ${env.VITE_SOCKET_BASE_URL};
-        `.replace(/\s{2,}/g, ' ').trim()
-      }
-    }
   }
 })

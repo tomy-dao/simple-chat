@@ -15,7 +15,7 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com data:;
     img-src 'self' https: data: blob:;
-    connect-src 'self' https: wss: ws: https://simple-chat-ws-production.up.railway.app;
+    connect-src 'self' http: https: wss: ws: %VITE_SOCKET_BASE_URL% %VITE_API_BASE_URL%;
   ">
   <title>Simple Chat</title>
 </head>
