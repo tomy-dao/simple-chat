@@ -13,6 +13,12 @@ RUN yarn
 # Copy source code
 COPY . .
 
+# Nhận biến môi trường từ Railway hoặc docker build --build-arg
+ARG VITE_API_BASE_API_URL
+ARG VITE_SOCKET_BASE_URL
+ENV VITE_API_BASE_API_URL=$VITE_API_BASE_API_URL
+ENV VITE_SOCKET_BASE_URL=$VITE_SOCKET_BASE_URL
+
 # Build the application
 RUN yarn build
 
