@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"local/endpoint"
 	"net/http"
 	"strings"
 	"time"
@@ -50,7 +50,6 @@ func TokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := getToken(r)
 		// Add token to request context
-		fmt.Println("token", token)
 		if token != "" {
 			// Parse token to extract user_id and session_id
 			claims, err := decodeJWT(token)
@@ -102,16 +101,23 @@ func JSONContentTypeMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// LoggingMiddleware custom logging middleware
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		duration := time.Since(start)
-		
-		// Log request details
-		// You can integrate with your logging system here
-		_ = duration // Use duration to avoid unused variable warning
-		// log.Printf("Request: %s %s - Duration: %v", r.Method, r.URL.Path, duration)
-	})
+
+
+
+func ProtectedMiddleware(endpoint *endpoint.Endpoints) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := getToken(r)
+			if token == "" {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			_, err := endpoint.Auth.Authenticate(r.Context())
+			if err != nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

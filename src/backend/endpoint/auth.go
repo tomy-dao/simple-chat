@@ -42,10 +42,8 @@ func (e *AuthEndpoints) Authenticate(ctx context.Context) (uint, error) {
 	return userID, nil
 }
 
-func (e *AuthEndpoints) GetMe(ctx context.Context, request interface{}) (Response[*model.User], error) {
-	req := request.(GetMeRequest)
-	
-	user, err := e.authService.GetMe(ctx, req.Token)
+func (e *AuthEndpoints) GetMe(ctx context.Context) (Response[*model.User], error) {
+	user, err := e.authService.GetMe(ctx)
 	if err != nil {
 		return Response[*model.User]{Data: nil, Error: err.Error()}, nil
 	}

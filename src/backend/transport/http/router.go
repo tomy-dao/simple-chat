@@ -15,25 +15,28 @@ func handleRouter(r chi.Router, endpoints *endpoint.Endpoints) chi.Router {
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
 		// Auth endpoints
-		r.Route("/auth", func(r chi.Router) {
-			r.Get("/me", h.GetMe())
-			r.Post("/register", h.Register())
-			r.Post("/login", h.Login())
+		r.Post("/register", h.Register())
+		r.Post("/login", h.Login())
+
+		// Protected routes
+		r.Group(func(r chi.Router) {
+			r.Use(ProtectedMiddleware(endpoints))
+
 			r.Post("/logout", h.Logout())
-		})
+			r.Get("/me", h.GetMe())
 
-		// User endpoints
-		r.Route("/users", func(r chi.Router) {
-			r.Get("/", h.GetUsers())
-		})
+			r.Route("/users", func(r chi.Router) {
+				r.Get("/", h.GetUsers())
+			})
 
-		// Conversation endpoints
-		r.Route("/conversations", func(r chi.Router) {
-			r.Post("/", h.CreateConversation())
-			r.Get("/", h.GetConversations())
-			r.Get("/user/{userID}", h.GetConversationByUserID())
-			r.Post("/{conversationID}/messages", h.CreateMessage())
-			r.Get("/{conversationID}/messages", h.GetMessagesByConversationID())
+			// Conversation endpoints
+			r.Route("/conversations", func(r chi.Router) {
+				r.Post("/", h.CreateConversation())
+				r.Get("/", h.GetConversations())
+				r.Get("/user/{userID}", h.GetConversationByUserID())
+				r.Post("/{conversationID}/messages", h.CreateMessage())
+				r.Get("/{conversationID}/messages", h.GetMessagesByConversationID())
+			})
 		})
 	})
 

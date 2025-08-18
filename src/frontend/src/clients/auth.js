@@ -5,7 +5,7 @@ const auth = {
   // Login user
   login: async (credentials) => {
     try {
-      const response = await client.post('/auth/login', credentials);
+      const response = await client.post('/login', credentials);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -15,7 +15,7 @@ const auth = {
   // Register user
   register: async (userData) => {
     try {
-      const response = await client.post('/auth/register', userData);
+      const response = await client.post('/register', userData);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Registration failed');
@@ -25,7 +25,7 @@ const auth = {
   // Get user
   getMe: async () => {
     try {
-      const response = await client.get('/auth/me', {
+      const response = await client.get('/me', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -50,7 +50,7 @@ const auth = {
   // Logout user
   logout: async () => {
     try {
-      await client.post('/auth/logout');
+      await client.post('/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

@@ -19,7 +19,7 @@ type AuthService interface {
 	Authenticate(ctx context.Context) (uint, error)
 	ParseToken(tokenStr string) (map[string]interface{}, error)
 	CheckToken(ctx context.Context, token string) (bool, error)
-	GetMe(ctx context.Context, token string) (*model.User, error)
+	GetMe(ctx context.Context) (*model.User, error)
 	Register(ctx context.Context, userName, password string) (*model.User, error)
 	Login(ctx context.Context, userName, password string) (string, error)
 	Logout(ctx context.Context, token string) error
@@ -89,11 +89,12 @@ func (svc *authService) CheckToken(ctx context.Context, token string) (bool, err
 	return true, nil
 }
 
-func (svc *authService) GetMe(ctx context.Context, token string) (*model.User, error) {
+func (svc *authService) GetMe(ctx context.Context) (*model.User, error) {
+	token := ctx.Value("token").(string)
 	if token == "" {
 		return nil, errors.New("token is required")
 	}
-
+	
 	claims, err := svc.ParseToken(token)
 	if err != nil {
 		return nil, err

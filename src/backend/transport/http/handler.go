@@ -16,7 +16,6 @@ type handler struct {
 
 func getToken(r *http.Request) string {
 	token := r.Header.Get("Authorization")
-	fmt.Println("token", token)
 	if token == "" {
 		return ""
 	}
@@ -24,14 +23,8 @@ func getToken(r *http.Request) string {
 }
 
 func (h *handler) GetMe() http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		token := getToken(r)
-		req := endpoint.GetMeRequest{
-			Token: token,
-		}
-
-		user, err := h.endpoints.Auth.GetMe(r.Context(), req)
+		user, err := h.endpoints.Auth.GetMe(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -99,9 +92,9 @@ type CreateConversationRequest struct {
 func (h *handler) CreateConversation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req CreateConversationRequest
-		userID, err := h.endpoints.Auth.Authenticate(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+		userID, ok := r.Context().Value("user_id").(float64)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
@@ -110,7 +103,7 @@ func (h *handler) CreateConversation() http.HandlerFunc {
 			return
 		}
 
-		conversation, err := h.endpoints.Conversation.CreateConversation(r.Context(), []uint{req.UserID, userID})
+		conversation, err := h.endpoints.Conversation.CreateConversation(r.Context(), []uint{req.UserID, uint(userID)})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -122,9 +115,9 @@ func (h *handler) CreateConversation() http.HandlerFunc {
 
 func (h *handler) GetConversationByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		myID, err := h.endpoints.Auth.Authenticate(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+		myID, ok := r.Context().Value("user_id").(float64)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		userID, err := strconv.ParseUint(chi.URLParam(r, "userID"), 10, 64)
@@ -133,7 +126,7 @@ func (h *handler) GetConversationByUserID() http.HandlerFunc {
 			return
 		}
 
-		conversation, err := h.endpoints.Conversation.GetConversationByUserIDs(r.Context(), []uint{myID, uint(userID)})
+		conversation, err := h.endpoints.Conversation.GetConversationByUserIDs(r.Context(), []uint{uint(myID), uint(userID)})
 		fmt.Println("Conversation: ", conversation)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -146,11 +139,12 @@ func (h *handler) GetConversationByUserID() http.HandlerFunc {
 
 func (h *handler) GetConversations() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := h.endpoints.Auth.Authenticate(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+		userID, ok := r.Context().Value("user_id").(float64)
+		fmt.Println("userID", ok)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		}
-		conversations, err := h.endpoints.Conversation.GetUserConversations(r.Context(), userID)
+		conversations, err := h.endpoints.Conversation.GetUserConversations(r.Context(), uint(userID))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -163,9 +157,9 @@ func (h *handler) GetConversations() http.HandlerFunc {
 func (h *handler) CreateMessage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req endpoint.CreateMessageRequest
-		userID, err := h.endpoints.Auth.Authenticate(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+		userID, ok := r.Context().Value("user_id").(float64)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		conversationID, err := strconv.ParseUint(chi.URLParam(r, "conversationID"), 10, 64)
@@ -174,7 +168,7 @@ func (h *handler) CreateMessage() http.HandlerFunc {
 			return
 		}
 		req.ConversationID = uint(conversationID)
-		req.SenderID = userID
+		req.SenderID = uint(userID)
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
@@ -210,12 +204,6 @@ func (h *handler) GetMessagesByConversationID() http.HandlerFunc {
 // User handlers
 func (h *handler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, err := h.endpoints.Auth.Authenticate(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
 		users, err := h.endpoints.Auth.GetUsers(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
