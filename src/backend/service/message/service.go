@@ -29,8 +29,16 @@ func (svc *messageService) CreateMessage(ctx context.Context, message *model.Mes
 		return nil, errors.New("failed to create message")
 	}
 
-	conversation, _ := svc.cvsSvc.GetConversationByID(ctx, message.ConversationID)
+	conversation, err := svc.cvsSvc.GetConversationByID(ctx, message.ConversationID)
+	if err != nil {
+		return nil, err
+	}
 
+	conversation.LastMessageID = message.ID
+	svc.repo.Conversation().Update(ctx, conversation)
+
+	createdMessage.Conversation = conversation
+	
 	userIds := []int{}
 	for _, participant := range conversation.Participants {
 		userIds = append(userIds, int(participant.UserID))

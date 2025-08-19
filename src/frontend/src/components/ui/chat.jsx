@@ -214,7 +214,7 @@ export const ChatContainer = forwardRef(({ className, ...props }, ref) => {
 })
 ChatContainer.displayName = "ChatContainer"
 
-export const ChatForm = forwardRef(({ children, handleSubmit, isPending, className }, ref) => {
+export const ChatForm = forwardRef(({ children, handleSubmit, className }, ref) => {
   const [files, setFiles] = useState(null)
 
   const onSubmit = (event) => {

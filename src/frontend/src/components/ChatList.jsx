@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import auth from "@/clients/auth";
 import chat from "@/clients/chat";
+import { socket, eventListener } from "@/App";
+import { toast } from "sonner";
 
 const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, conversationId }) => {
   const [users, setUsers] = useState([]);
@@ -39,6 +41,7 @@ const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, 
       onUserSelect(userIdSelected);
     } catch {
       onUserSelect(userId);
+      onConversationSelect(null);
     }
   };
 
@@ -49,6 +52,45 @@ const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, 
       fetchUsers();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const msgSignal = socket.on("message", ({message}) => {
+      console.log(message);
+      if (message.conversation_id !== conversationId && message.sender_id !== user.id) {
+        toast.success("New message received", {
+          position: "top-right",
+          style: {
+            background: "green",
+            color: "white",
+          },
+        });
+      }
+    });
+    return () => {
+      msgSignal.remove();
+    }
+  }, [conversationId]);
+
+  useEffect(() => {
+    function updateConversation({message}) {
+      setConversations((prevConversations) => {
+        console.log(message.conversation_id);
+        const existingIndex = prevConversations.findIndex(conv => conv.id === message.conversation_id);
+        if (existingIndex !== -1) {
+          return [message.conversation, ...prevConversations.filter((_, index) => index !== existingIndex)];
+        }
+        return [message.conversation, ...prevConversations];
+      });
+    }
+    const msgSignal = socket.on("message", updateConversation);
+    const msgListener = eventListener.on("message", updateConversation);
+
+    return () => {
+      msgSignal.remove();
+      msgListener.remove();
+    }
+  }, []);
+
   return (
     <div className="w-70 bg-white border rounded-lg mr-4 h-full overflow-y-auto flex flex-col">
       <div className="p-4 border-b">
@@ -91,11 +133,12 @@ const ChatList = ({ onLogout, userId, onUserSelect, onConversationSelect, user, 
                 </div>
               ))
             ) : <></>}
+            {console.log(conversations)}
             {activeTab === "conversations" ? (
               conversations.map((conversation) => (
                 <div
                   key={conversation.id}
-                  className={`p-3 hover:bg-gray-50 rounded-lg cursor-pointer border-l-4 bg-blue-50 ${conversation.id === conversationId ? "border-blue-500" : ""}`}
+                  className={`p-3 hover:bg-gray-50 rounded-lg cursor-pointer border-l-4 bg-blue-50 ${conversation?.id === conversationId ? "border-blue-500" : ""}`}
                   onClick={() => handleConversationSelect(conversation)}
                 >
                   <div className="font-medium text-sm text-gray-800">

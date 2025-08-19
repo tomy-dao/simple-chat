@@ -2,6 +2,7 @@ import { useState } from 'react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import auth from '@/clients/auth';
+import { toast } from 'sonner';
 
 const AuthContainer = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +18,13 @@ const AuthContainer = ({ onAuthSuccess }) => {
       onAuthSuccess(user);
     } catch (error) {
       console.log(error);
+      toast.error("Invalid username or password.", {
+        position: "top-right",
+        style: {
+          background: "white",
+          color: "red",
+        },
+      });
       throw new Error('Invalid username or password.');
     }
   };
@@ -32,8 +40,14 @@ const AuthContainer = ({ onAuthSuccess }) => {
       
       // Call success callback
       onAuthSuccess(user);
-    } catch (error) {
-      console.log(error);
+    } catch {
+      toast.error("Registration failed. Username might already exist.", {
+        position: "top-right",
+        style: {
+          background: "white",
+          color: "red",
+        },
+      });
       throw new Error('Registration failed. Username might already exist.');
     }
   };

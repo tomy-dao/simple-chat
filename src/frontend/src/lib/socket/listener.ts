@@ -13,6 +13,12 @@ export class SocketListener {
         } else {
             this.listener[event] = [fn];
         }
+
+        return {
+            remove: () => {
+                this.remove(event, fn);
+            },
+        }
     }
 
     get(event: string) {
@@ -27,5 +33,20 @@ export class SocketListener {
                 this.listener[event].splice(index, 1);
             }
         }
+    }
+
+    trigger(event: string, payload: any) {
+        const listeners = this.get(event);
+        listeners.forEach((fn) => {
+            fn(payload, event);
+        });
+    }
+
+    on(event: string, fn: ListenerCallback) {
+        return this.add(event, fn);
+    }
+
+    emit(event: string, payload: any) {
+        this.trigger(event, payload);
     }
 }

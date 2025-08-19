@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Chat } from "@/components/ui/chat";
 import ChatList from "@/components/ChatList";
 import chat from "@/clients/chat";
-import { socket } from "@/App";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { socket, eventListener } from "@/App";
 
 let count = 2;
 
@@ -27,6 +26,7 @@ export function ChatComponent({ onLogout, user, connectId }) {
       content: messageTerminated.content,
       session_id: connectId,
     });
+    eventListener.emit("message", { message });
     setMessages((prevMessages) => {
       // replace the messageTerminated with the new message
       const index = prevMessages.findIndex(

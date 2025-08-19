@@ -14,8 +14,8 @@ type Message struct {
 	UpdatedAt      time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 	SessionID      string    `json:"session_id,omitempty"`
 
-	Conversation Conversation `json:"conversation" gorm:"foreignKey:ConversationID"`
-	Sender       User         `json:"sender" gorm:"foreignKey:SenderID"`
+	Conversation *Conversation `json:"conversation,omitempty" gorm:"foreignKey:ConversationID;references:ID"`
+	Sender       *User         `json:"sender,omitempty" gorm:"foreignKey:SenderID;references:ID"`
 }
 
 func (Message) TableName() string {

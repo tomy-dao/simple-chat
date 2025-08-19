@@ -78,6 +78,7 @@ func (r *conversationRepository) GetByParticipant(ctx context.Context, userID ui
 		Preload("Participants.User").
 		Joins("JOIN conversation_participants ON conversations.id = conversation_participants.conversation_id").
 		Where("conversation_participants.user_id = ?", userID).
+		Order("last_message_id DESC").
 		Find(&conversations).Error
 	if err != nil {
 		return nil

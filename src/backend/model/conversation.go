@@ -14,8 +14,10 @@ type Conversation struct {
 	UpdatedAt   		time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 	EntityJoined 		string `json:"entity_joined" gorm:"type:text"`
 	UserIds 				UserIds `json:"user_ids" gorm:"type:json"`
+
+	LastMessageID 	uint `json:"last_message_id" gorm:"column:last_message_id"`
 	
-	Participants 		[]ConversationParticipant `json:"participants" gorm:"foreignKey:ConversationID"`
+	Participants 		[]*ConversationParticipant `json:"participants,omitempty" gorm:"foreignKey:ConversationID"`
 }
 
 // UserIds is a custom type to handle JSON serialization for MySQL

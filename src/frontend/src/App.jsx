@@ -1,33 +1,39 @@
-import { useState, useEffect } from 'react';
-import AuthContainer from './components/AuthContainer';
-import ChatComponent from './components/Chat';
-import auth from './clients/auth';
-import { newSocket } from './lib/socket';
-import { DefaultEvent } from './lib/socket/socket';
-import { config } from './config';
+import { useState, useEffect } from "react";
+import AuthContainer from "./components/AuthContainer";
+import ChatComponent from "./components/Chat";
+import auth from "./clients/auth";
+import { newSocket, newSocketListener } from "./lib/socket";
+import { DefaultEvent } from "./lib/socket/socket";
+import { config } from "./config";
+import { Toaster } from "./components/ui/sonner";
 
 export const socket = newSocket(config.socketUrl);
+export const eventListener = newSocketListener();
 
 function App() {
-  const [user, setUser] = useState(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);
+  const [user, setUser] = useState(
+    localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user"))
+      : null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [connectId, setConnectId] = useState(null);
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('authToken');
-    const savedUser = localStorage.getItem('user');
-    
+    const token = localStorage.getItem("authToken");
+    const savedUser = localStorage.getItem("user");
+
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
       } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        console.error("Error parsing saved user:", error);
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
       }
     }
-    
+
     setIsLoading(false);
   }, []);
 
@@ -70,10 +76,15 @@ function App() {
   return (
     <div className="App">
       {user ? (
-        <ChatComponent onLogout={handleLogout} user={user} connectId={connectId} />
+        <ChatComponent
+          onLogout={handleLogout}
+          user={user}
+          connectId={connectId}
+        />
       ) : (
         <AuthContainer onAuthSuccess={handleAuthSuccess} />
       )}
+      <Toaster />
     </div>
   );
 }
