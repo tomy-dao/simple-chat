@@ -11,6 +11,7 @@ type ServiceConfig struct {
 	
 
 	BackendServerURL string
+	SecretKey string
 }
 
 var Config = ServiceConfig{}
@@ -34,10 +35,12 @@ func LoadConfig() {
 
 
 	backendServerURL := getEnv("BACKEND_SERVER_URL", "http://localhost")
+	secretKey := getEnv("JWT_SECRET", "your-super-secret-jwt")
 
 	Config = ServiceConfig{
 		HTTPPort: httpPortInt,
 		Host:     host,
 		BackendServerURL: backendServerURL,
+		SecretKey: secretKey,
 	}
 }

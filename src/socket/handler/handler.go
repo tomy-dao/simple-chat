@@ -3,11 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"local/config"
 	"local/event"
 	"local/libs/socket"
 	"log"
 	"net/http"
 
+	"github.com/golang-jwt/jwt/v5"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -45,7 +47,30 @@ func (h *handle) responseJSON(w http.ResponseWriter, data any) {
 	w.Write(jsonStr)
 }
 
+func checkJWT(token string) (any, error) {
+	claims, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.Config.SecretKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return claims, nil
+}
+
 func (h *handle) Broadcast(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		h.responseJSON(w, &responseError{Error: "Unauthorized"})
+		return
+	}
+	
+	_, err := checkJWT(token[7:])
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		h.responseJSON(w, &responseError{Error: err.Error()})
+		return
+	}
 	validate := validator.New()
 	var res RequestBroadcast
 	log.Default().Print("Broadcast")

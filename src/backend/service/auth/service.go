@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"local/config"
 	"local/model"
 	"local/repository"
 	"local/service/common"
@@ -204,6 +205,6 @@ func (svc *authService) GetUsers(ctx context.Context) ([]*model.User, error) {
 func NewAuthService(params *common.Params) AuthService {
 	return &authService{
 		repo:      params.Repo,
-		jwtSecret: "your-secret-key-here",
+		jwtSecret: config.Config.JwtSecret,
 	}
 }

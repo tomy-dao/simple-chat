@@ -25,21 +25,10 @@ func RegisterEvent(socketServer SK.Server) {
 			}
 			me, err := client.GetMe(data.Token)
 			if err != nil {
-				socket.Emit("authenticate_fail", nil)
+				socket.Emit("authenticate_fail", err)
 				return
 			}
-			claims, err := decodeJWT(data.Token)
-			if err != nil {
-				socket.Emit("authenticate_fail", nil)
-				return
-			}
-
-			sessionId := claims["session_id"].(string)
-			userId, ok := claims["user_id"].(float64)
-			if ok {
-				socket.Join(sessionId)
-				socket.Join(fmt.Sprintf("%d", int(userId)))
-			}
+			socket.Join(fmt.Sprintf("%d", int(me.ID)))
 
 			socket.Emit("authenticate_success", me)
 		})

@@ -18,6 +18,7 @@ type ServiceConfig struct {
 
 	SocketServerURL string
 	SocketToken     string
+	JwtSecret       string
 }
 
 var Config = ServiceConfig{}
@@ -43,6 +44,7 @@ func LoadConfig() {
 	dbUser := getEnv("DB_USER", "root")
 	dbPassword := getEnv("DB_PASSWORD", "your_root_password")
 	dbName := getEnv("DB_NAME", "simple_chat")
+	jwtSecret := getEnv("JWT_SECRET", "your_jwt_secret")
 
 	socketServerURL := getEnv("SOCKET_SERVER_URL", "http://localhost:8080")
 	socketToken := getEnv("SOCKET_TOKEN", "your_socket_token")
@@ -57,5 +59,6 @@ func LoadConfig() {
 		DBName:     dbName,
 		SocketServerURL: socketServerURL,
 		SocketToken:     socketToken,
+		JwtSecret:       jwtSecret,
 	}
 }

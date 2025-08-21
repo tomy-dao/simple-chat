@@ -1,30 +1,6 @@
 version: '3.8'
 
 services:
-  # Nginx Proxy
-  proxy:
-    build:
-      context: ./src/proxy
-      dockerfile: Dockerfile
-    container_name: simple-chat-proxy
-    environment:
-      - NGINX_PORT=${NGINX_PORT}
-      - NGINX_SSL_PORT=${NGINX_SSL_PORT}
-      - BACKEND_PORT=${BACKEND_PORT}
-      - FRONTEND_PORT=${FRONTEND_PORT}
-      - SOCKET_PORT=${SOCKET_PORT}
-    ports:
-      - "${NGINX_PORT}:80"
-      - "${NGINX_SSL_PORT}:443"
-    depends_on:
-      - backend
-      - frontend
-      - socket
-    networks:
-      - simple-chat-network
-    restart: unless-stopped
-
-  # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: simple-chat-mysql
@@ -35,6 +11,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     expose:
       - "3306"
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -47,7 +25,7 @@ services:
   backend:
     build:
       context: ./src/backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: simple-chat-backend
     environment:
       # Database configuration
@@ -57,89 +35,67 @@ services:
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_SSL_MODE: false
-      
-      # Server configuration
-      SERVER_PORT: ${BACKEND_PORT}
+      HTTP_PORT: ${HTTP_PORT}
       SERVER_HOST: 0.0.0.0
-      
       # JWT configuration
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRY: ${JWT_EXPIRY}
-      
-      # CORS configuration
-      CORS_ORIGIN: ${CORS_ORIGIN}
-      
-      # Environment
+
+      SOCKET_SERVER_URL: http://simple-chat-socket:${SOCKET_PORT}
+      SOCKET_TOKEN: ${SOCKET_TOKEN}
       ENV: ${ENV}
-    expose:
-      - "${BACKEND_PORT}"
+    command: sh -c 'go mod tidy && gow run .'
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
     depends_on:
       - mysql
     networks:
       - simple-chat-network
     restart: unless-stopped
+    working_dir: /app
     volumes:
       - ./src/backend:/app
-      - /app/vendor
 
   # Socket Service (WebSocket)
   socket:
     build:
       context: ./src/socket
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: simple-chat-socket
     environment:
       # Socket configuration
-      SOCKET_PORT: ${SOCKET_PORT}
-      SOCKET_HOST: 0.0.0.0
-      
-      # Redis for socket clustering (optional)
-      REDIS_URL: ${REDIS_URL}
-      
-      # Environment
-      ENV: ${ENV}
-    expose:
-      - "${SOCKET_PORT}"
+      HTTP_PORT: ${SOCKET_PORT}
+      HOST: 0.0.0.0
+      BACKEND_SERVER_URL: http://simple-chat-backend
+      JWT_SECRET: ${JWT_SECRET}
+    command: sh -c 'go mod tidy && gow run .'
+    ports:
+      - "${SOCKET_PORT}:${SOCKET_PORT}"
     depends_on:
       - mysql
     networks:
       - simple-chat-network
     restart: unless-stopped
+    working_dir: /app
     volumes:
       - ./src/socket:/app
-      - /app/vendor
 
-  # Redis (for socket clustering)
-  redis:
-    image: redis:7-alpine
-    container_name: simple-chat-redis
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    networks:
-      - simple-chat-network
-    restart: unless-stopped
 
   # React Frontend
   frontend:
     build:
       context: ./src/frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
+      args:
+        - FRONTEND_PORT=${FRONTEND_PORT}
+        - VITE_API_BASE_API_URL=${VITE_API_BASE_API_URL}
+        - VITE_SOCKET_BASE_URL=${VITE_SOCKET_BASE_URL}
     container_name: simple-chat-frontend
     environment:
-      # API configuration
-      REACT_APP_API_URL: ${REACT_APP_API_URL}
-      REACT_APP_WS_URL: ${REACT_APP_WS_URL}
-      REACT_APP_SOCKET_URL: ${REACT_APP_SOCKET_URL}
-      
-      # App configuration
-      REACT_APP_NAME: ${REACT_APP_NAME}
-      REACT_APP_VERSION: ${REACT_APP_VERSION}
-      
-      # Environment
-      NODE_ENV: ${NODE_ENV}
-    expose:
-      - "${FRONTEND_PORT}"
+      - VITE_API_BASE_API_URL=${VITE_API_BASE_API_URL}
+      - VITE_SOCKET_BASE_URL=${VITE_SOCKET_BASE_URL}
+    command: sh -c 'yarn install && yarn dev --port ${FRONTEND_PORT} --host 0.0.0.0'
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     depends_on:
       - backend
       - socket
