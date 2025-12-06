@@ -49,15 +49,20 @@ function App() {
   useEffect(() => {
     if (!user) return;
     socket.connect();
-    socket.on(DefaultEvent.Connected, () => {
+
+    const signalConnected = socket.on(DefaultEvent.Connected, () => {
       socket.emit("authenticate", {
         token: localStorage.getItem("authToken"),
       });
     });
-    socket.on("send_connect_id", (connectId) => {
+
+    const signalConn = socket.on("send_connect_id", (connectId) => {
       setConnectId(connectId);
     });
+
     return () => {
+      signalConnected.remove();
+      signalConn.remove();
       socket.disconnect();
     };
   }, [user]);

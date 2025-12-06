@@ -1,41 +1,50 @@
 package message
 
 import (
-	"context"
-	"errors"
 	"local/client"
+	"local/infra/repo"
 	"local/model"
-	"local/repository"
 	"local/service/auth"
 	"local/service/common"
 	"local/service/conversation"
+	"local/util/logger"
 )
 
 type MessageService interface {
-	CreateMessage(ctx context.Context, message *model.Message) (*model.Message, error)
-	GetMessagesByConversationID(ctx context.Context, conversationID uint) ([]*model.Message, error)
+	CreateMessage(reqCtx *model.RequestContext, message *model.Message) model.Response[*model.Message]
+	GetMessagesByConversationID(reqCtx *model.RequestContext, conversationID uint) model.Response[[]*model.Message]
 }
 
 type messageService struct {
-	repo repository.RepositoryInterface
+	repo repo.RepositoryInterface
 	client *client.Client
 	authService auth.AuthService
 	cvsSvc conversation.ConversationService
 }
 
-func (svc *messageService) CreateMessage(ctx context.Context, message *model.Message) (*model.Message, error) {
-	createdMessage := svc.repo.Message().Create(ctx, message)
-	if createdMessage == nil {
-		return nil, errors.New("failed to create message")
+func (svc *messageService) CreateMessage(reqCtx *model.RequestContext, message *model.Message) model.Response[*model.Message] {
+	logger.Info(reqCtx, "CreateMessage called", map[string]interface{}{
+		"conversation_id": message.ConversationID,
+		"sender_id": message.SenderID,
+	})
+	createResponse := svc.repo.Message().Create(reqCtx, message)
+	if !createResponse.OK() {
+		return createResponse
 	}
 
-	conversation, err := svc.cvsSvc.GetConversationByID(ctx, message.ConversationID)
-	if err != nil {
-		return nil, err
+	createdMessage := createResponse.Data
+
+	conversationResponse := svc.cvsSvc.GetConversationByID(reqCtx, message.ConversationID)
+	if !conversationResponse.OK() {
+		return model.BadRequest[*model.Message]("Conversation not found")
 	}
 
-	conversation.LastMessageID = message.ID
-	svc.repo.Conversation().Update(ctx, conversation)
+	conversation := conversationResponse.Data
+	conversation.LastMessageID = createdMessage.ID
+	updateResponse := svc.repo.Conversation().Update(reqCtx, conversation)
+	if !updateResponse.OK() {
+		return model.BadRequest[*model.Message]("Failed to update conversation")
+	}
 
 	createdMessage.Conversation = conversation
 	
@@ -53,16 +62,13 @@ func (svc *messageService) CreateMessage(ctx context.Context, message *model.Mes
 		},
 	})
 	
-	return createdMessage, nil
+	return model.SuccessResponse(createdMessage, "Message created successfully")
 }
 
-func (svc *messageService) GetMessagesByConversationID(ctx context.Context, conversationID uint) ([]*model.Message, error) {
-	messages := svc.repo.Message().GetByConversationID(ctx, conversationID)
-	if messages == nil {
-		return nil, errors.New("failed to get messages")
-	}
-
-	return messages, nil
+func (svc *messageService) GetMessagesByConversationID(reqCtx *model.RequestContext, conversationID uint) model.Response[[]*model.Message] {
+	logger.Info(reqCtx, "GetMessagesByConversationID called", map[string]interface{}{"conversation_id": conversationID})
+	response := svc.repo.Message().GetByConversationID(reqCtx, conversationID)
+	return response
 }
 
 func NewMessageService(params *common.Params, authService auth.AuthService, cvsSvc conversation.ConversationService) MessageService {

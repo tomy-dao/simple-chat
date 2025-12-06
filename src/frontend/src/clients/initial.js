@@ -23,3 +23,18 @@ client.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Response interceptor to handle 401 errors
+client.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      // Remove token and redirect to login
+      localStorage.removeItem('authToken');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);

@@ -1,0 +1,603 @@
+basePath: /api/v1
+definitions:
+  endpoint.CreateMessageRequest:
+    properties:
+      content:
+        type: string
+      conversation_id:
+        type: integer
+      sender_id:
+        type: integer
+      session_id:
+        type: string
+    type: object
+  endpoint.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  endpoint.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  endpoint.RegisterRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  httpTransoprt.CreateConversationRequest:
+    properties:
+      user_id:
+        type: integer
+    type: object
+  model.Conversation:
+    properties:
+      created_at:
+        type: string
+      entity_joined:
+        type: string
+      id:
+        type: integer
+      last_message_id:
+        type: integer
+      name:
+        type: string
+      participants:
+        items:
+          $ref: '#/definitions/model.ConversationParticipant'
+        type: array
+      type:
+        type: string
+      updated_at:
+        type: string
+      user_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  model.ConversationParticipant:
+    properties:
+      conversation:
+        $ref: '#/definitions/model.Conversation'
+      conversation_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      joined_at:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      user_id:
+        type: integer
+    type: object
+  model.Error:
+    properties:
+      code:
+        example: 500
+        type: integer
+      message:
+        example: Internal Server Error
+        type: string
+    type: object
+  model.Message:
+    properties:
+      content:
+        type: string
+      conversation:
+        $ref: '#/definitions/model.Conversation'
+      conversation_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      message_type:
+        type: string
+      sender:
+        $ref: '#/definitions/model.User'
+      sender_id:
+        type: integer
+      session_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.Response-any:
+    properties:
+      code:
+        type: integer
+      data: {}
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-array_model_Conversation:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.Conversation'
+        type: array
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-array_model_Message:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.Message'
+        type: array
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-array_model_User:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-endpoint_LoginResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/endpoint.LoginResponse'
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-model_Conversation:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/model.Conversation'
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-model_Message:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/model.Message'
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-model_User:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/model.User'
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.Response-string:
+    properties:
+      code:
+        type: integer
+      data:
+        type: string
+      errors:
+        description: Array of errors with code and message
+        items:
+          $ref: '#/definitions/model.Error'
+        type: array
+      message:
+        type: string
+    type: object
+  model.User:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:80
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: This is a simple chat application API server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Simple Chat API
+  version: "1.0"
+paths:
+  /conversations:
+    get:
+      description: Returns a list of all conversations where the authenticated user
+        is a participant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-array_model_Conversation'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Get all conversations for the authenticated user
+      tags:
+      - conversations
+    post:
+      consumes:
+      - application/json
+      description: Creates a new private conversation between the authenticated user
+        and another user
+      parameters:
+      - description: Conversation creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpTransoprt.CreateConversationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-model_Conversation'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Create a new private conversation
+      tags:
+      - conversations
+  /conversations/{conversationID}/messages:
+    get:
+      description: Retrieves all messages from the specified conversation, ordered
+        by creation time (newest first)
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: conversationID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-array_model_Message'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Get all messages in a conversation
+      tags:
+      - messages
+    post:
+      consumes:
+      - application/json
+      description: Creates a new message in the specified conversation
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: conversationID
+        required: true
+        type: integer
+      - description: Message data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.CreateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-model_Message'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "404":
+          description: Not Found - Conversation not found
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Create a new message in a conversation
+      tags:
+      - messages
+  /conversations/user/{userID}:
+    get:
+      description: Retrieves the private conversation between the authenticated user
+        and the specified user
+      parameters:
+      - description: Target User ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-model_Conversation'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "404":
+          description: Not Found - Conversation not found
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Get conversation between current user and another user
+      tags:
+      - conversations
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Validates user credentials and returns a JWT token for authentication
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-endpoint_LoginResponse'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid credentials
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      summary: Authenticate user and get JWT token
+      tags:
+      - auth
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates the current user's JWT token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-string'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Logout user and invalidate token
+      tags:
+      - auth
+  /me:
+    get:
+      description: Returns the current user's information based on the JWT token
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-model_User'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Get current authenticated user information
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with username and password
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-model_User'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "409":
+          description: Conflict - User already exists
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      summary: Register a new user account
+      tags:
+      - auth
+  /users:
+    get:
+      description: Returns a list of all registered users in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response-array_model_User'
+        "400":
+          description: Bad Request - Invalid input
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/model.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response-any'
+      security:
+      - BearerAuth: []
+      summary: Get all registered users
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,74 +1,74 @@
 package httpTransoprt
 
 import (
-	"encoding/json"
 	"local/endpoint"
-	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func handleRouter(r chi.Router, endpoints *endpoint.Endpoints) chi.Router {
+func handleRouter(r *gin.Engine, endpoints *endpoint.Endpoints) {
 	h := &handler{endpoints: endpoints}
 
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// API routes
-	r.Route("/api/v1", func(r chi.Router) {
+	v1 := r.Group("/api/v1")
+	{
 		// Auth endpoints
-		r.Post("/register", h.Register())
-		r.Post("/login", h.Login())
+		v1.POST("/register", h.Register())
+		v1.POST("/login", h.Login())
 
 		// Protected routes
-		r.Group(func(r chi.Router) {
-			r.Use(ProtectedMiddleware(endpoints))
+		protected := v1.Group("")
+		protected.Use(ProtectedMiddleware(endpoints))
+		{
+			protected.POST("/logout", h.Logout())
+			protected.GET("/me", h.GetMe())
 
-			r.Post("/logout", h.Logout())
-			r.Get("/me", h.GetMe())
-
-			r.Route("/users", func(r chi.Router) {
-				r.Get("/", h.GetUsers())
-			})
+			// Users endpoints
+			users := protected.Group("/users")
+			{
+				users.GET("/", h.GetUsers())
+			}
 
 			// Conversation endpoints
-			r.Route("/conversations", func(r chi.Router) {
-				r.Post("/", h.CreateConversation())
-				r.Get("/", h.GetConversations())
-				r.Get("/user/{userID}", h.GetConversationByUserID())
-				r.Post("/{conversationID}/messages", h.CreateMessage())
-				r.Get("/{conversationID}/messages", h.GetMessagesByConversationID())
-			})
-		})
-	})
+			conversations := protected.Group("/conversations")
+			{
+				conversations.POST("/", h.CreateConversation())
+				conversations.GET("/", h.GetConversations())
+				conversations.GET("/user/:userID", h.GetConversationByUserID())
+				conversations.POST("/:conversationID/messages", h.CreateMessage())
+				conversations.GET("/:conversationID/messages", h.GetMessagesByConversationID())
+			}
+		}
+	}
 
 	// Health check
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		response := map[string]interface{}{
+	r.GET("/health", func(c *gin.Context) {
+		OK(c, gin.H{
 			"status":    "OK",
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
 			"service":   "local-service",
-		}
-		json.NewEncoder(w).Encode(response)
+		})
 	})
 
 	// Root endpoint
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		response := map[string]interface{}{
+	r.GET("/", func(c *gin.Context) {
+		OK(c, gin.H{
 			"message": "Local Service API",
 			"version": "1.0.0",
 			"endpoints": map[string]string{
-				"health":     "/health",
-				"register":   "/api/v1/auth/register",
-				"login":      "/api/v1/auth/login",
-				"logout":     "/api/v1/auth/logout",
+				"health":        "/health",
+				"swagger":       "/swagger/index.html",
+				"register":      "/api/v1/register",
+				"login":         "/api/v1/login",
+				"logout":        "/api/v1/logout",
 				"conversations": "/api/v1/conversations",
 			},
-		}
-		json.NewEncoder(w).Encode(response)
+		}, "API is running")
 	})
-
-	return r
 }

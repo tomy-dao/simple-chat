@@ -6,11 +6,12 @@ import (
 	"local/client"
 	"local/config"
 	"local/endpoint"
+	"local/infra/repo"
 	"local/model"
-	"local/repository"
 	"local/service/common"
 	"local/service/initial"
 	httpTransoprt "local/transport/http"
+	"local/util/logger"
 	"log"
 	http "net/http"
 	"os"
@@ -25,8 +26,19 @@ func Run() {
 	ctx := context.Background()
 	defer ctx.Done()
 
+	// Initialize OpenTelemetry tracer
+	_, err := logger.InitTracer(ServiceName)
+	if err != nil {
+		log.Fatalf("Failed to initialize tracer: %v", err)
+	}
+	defer func() {
+		if err := logger.Shutdown(); err != nil {
+			log.Printf("Error shutting down tracer: %v", err)
+		}
+	}()
+
 	// Initialize MySQL repository
-	repo, err := repository.NewRepository()
+	repository, err := repo.NewRepository()
 	if err != nil {
 		log.Fatalf("Failed to initialize repository: %v", err)
 	}
@@ -39,7 +51,7 @@ func Run() {
 
 	// Run the service
 	svc := initial.NewService(&common.Params{
-		Repo:   repo,
+		Repo:   repository,
 		Client: clt,
 	})
 
@@ -52,6 +64,7 @@ func runServer(initParams *model.InitParams, endpoints *endpoint.Endpoints) {
 	svr := httpTransoprt.MakeHttpTransport(initParams, endpoints)
 	log.Printf("HTTP server listening on %s", fmt.Sprintf(":%d", config.Config.HTTPPort))
 
+	// Gin engine can be used with http.ListenAndServe or its own Run() method
 	errCh := make(chan error, 1)
 
 	go func() {

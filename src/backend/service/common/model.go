@@ -2,10 +2,10 @@ package common
 
 import (
 	"local/client"
-	"local/repository"
+	"local/infra/repo"
 )
 
 type Params struct {
-	Repo   repository.RepositoryInterface
+	Repo   repo.RepositoryInterface
 	Client *client.Client
 }

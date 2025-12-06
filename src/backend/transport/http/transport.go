@@ -3,13 +3,12 @@ package httpTransoprt
 import (
 	"local/endpoint"
 	"local/model"
-	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-gonic/gin"
 )
 
-func MakeHttpTransport(initParams *model.InitParams, endpoints *endpoint.Endpoints) http.Handler {
-	r := chi.NewRouter()
+func MakeHttpTransport(initParams *model.InitParams, endpoints *endpoint.Endpoints) *gin.Engine {
+	r := gin.Default()
 
 	SetupMiddleware(r)
 

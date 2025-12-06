@@ -1,11 +1,11 @@
 package endpoint
 
 import (
-	"context"
 	"local/model"
 	"local/service/auth"
 	"local/service/conversation"
 	"local/service/initial"
+	"local/util/logger"
 )
 
 type ConversationEndpoints struct {
@@ -22,30 +22,19 @@ type GetUserConversationsRequest struct {
 }
 
 
-func (e *ConversationEndpoints) CreateConversation(ctx context.Context, userIDs []uint) (Response[*model.Conversation], error) {
-	conversation, err := e.cvsSvc.CreateConversation(ctx, userIDs)
-	if err != nil {
-		return Response[*model.Conversation]{Data: nil, Error: err.Error()}, nil
-	}
-	
-	return Response[*model.Conversation]{Data: &conversation, Error: ""}, nil
+func (e *ConversationEndpoints) CreateConversation(reqCtx *model.RequestContext, userIDs []uint) model.Response[*model.Conversation] {
+	logger.Info(reqCtx, "ConversationEndpoints.CreateConversation called", map[string]interface{}{"user_ids": userIDs})
+	return e.cvsSvc.CreateConversation(reqCtx, userIDs)
 }
 
-func (e *ConversationEndpoints) GetConversationByUserIDs(ctx context.Context, userIDs []uint) (*Response[*model.Conversation], error) {
-	conversation, err := e.cvsSvc.GetConversationByUserIDs(ctx, userIDs)
-	if err != nil {
-		return nil, err
-	}
-	return &Response[*model.Conversation]{Data: &conversation, Error: ""}, nil
+func (e *ConversationEndpoints) GetConversationByUserIDs(reqCtx *model.RequestContext, userIDs []uint) model.Response[*model.Conversation] {
+	logger.Info(reqCtx, "ConversationEndpoints.GetConversationByUserIDs called", map[string]interface{}{"user_ids": userIDs})
+	return e.cvsSvc.GetConversationByUserIDs(reqCtx, userIDs)
 }
 
-func (e *ConversationEndpoints) GetUserConversations(ctx context.Context, userID uint) (Response[[]*model.Conversation], error) {
-	conversations, err := e.cvsSvc.GetUserConversations(ctx, userID)
-	if err != nil {
-		return Response[[]*model.Conversation]{Data: nil, Error: err.Error()}, nil
-	}
-	
-	return Response[[]*model.Conversation]{Data: &conversations, Error: ""}, nil
+func (e *ConversationEndpoints) GetUserConversations(reqCtx *model.RequestContext, userID uint) model.Response[[]*model.Conversation] {
+	logger.Info(reqCtx, "ConversationEndpoints.GetUserConversations called", map[string]interface{}{"user_id": userID})
+	return e.cvsSvc.GetUserConversations(reqCtx, userID)
 }
 
 func NewConversationEndpoints(params *initial.Service) *ConversationEndpoints {

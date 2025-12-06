@@ -1,18 +1,17 @@
 package httpTransoprt
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"local/endpoint"
-	"net/http"
+	"local/model"
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func decodeJWT(tokenString string) (map[string]interface{}, error) {
@@ -46,78 +45,89 @@ func decodeJWT(tokenString string) (map[string]interface{}, error) {
 	return claims, nil
 }
 
-func TokenMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := getToken(r)
+func getToken(c *gin.Context) string {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		return ""
+	}
+	if len(token) > 7 && token[:7] == "Bearer " {
+		return token[7:]
+	}
+	return token
+}
+
+func TokenMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := getToken(c)
 		// Add token to request context
 		if token != "" {
 			// Parse token to extract user_id and session_id
 			claims, err := decodeJWT(token)
 			if err != nil {
-				http.Error(w, "Unauthorized: Token expired or invalid", http.StatusUnauthorized)
-				return
+				// Don't abort here, just skip adding context
+				// Let ProtectedMiddleware handle authentication
+			} else {
+				var userID uint
+				if uid, ok := claims["user_id"].(float64); ok {
+					userID = uint(uid)
+				}
+				sessionID := ""
+				if sid, ok := claims["session_id"].(string); ok {
+					sessionID = sid
+				}
+				reqCtx := model.NewRequestContext(c.Request.Context()).WithClaims(token, userID, sessionID)
+				c.Request = c.Request.WithContext(reqCtx.Context())
 			}
-			
-			ctx := context.WithValue(r.Context(), "user_id", claims["user_id"])
-			ctx = context.WithValue(ctx, "session_id", claims["session_id"])
-			ctx = context.WithValue(ctx, "token", token)
-			r = r.WithContext(ctx)
 		}
 
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }
 
-func SetupMiddleware(r chi.Router) {
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.CleanPath)
-	r.Use(middleware.GetHead)
-	r.Use(middleware.Timeout(60 * time.Second))
+func SetupMiddleware(r *gin.Engine) {
+	// OpenTelemetry tracing middleware (must be first)
+	r.Use(otelgin.Middleware("simple-chat-api"))
 
-	r.Use(TokenMiddleware)
+	// CORS middleware
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"*"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"}
+	config.ExposeHeaders = []string{"Link"}
+	config.AllowCredentials = true
+	config.MaxAge = 12 * time.Hour
+	r.Use(cors.New(config))
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
+	// Token middleware
+	r.Use(TokenMiddleware())
 
 	// JSON Content-Type middleware
-	r.Use(JSONContentTypeMiddleware)
+	r.Use(JSONContentTypeMiddleware())
 }
 
 // JSONContentTypeMiddleware automatically sets Content-Type to application/json for all responses
-func JSONContentTypeMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set Content-Type to application/json for all responses
-		w.Header().Set("Content-Type", "application/json")
-		next.ServeHTTP(w, r)
-	})
+// Excludes Swagger routes to allow HTML content type
+func JSONContentTypeMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Skip JSON content type for Swagger routes
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
+			c.Next()
+			return
+		}
+		c.Header("Content-Type", "application/json")
+		c.Next()
+	}
 }
 
-
-
-
-func ProtectedMiddleware(endpoint *endpoint.Endpoints) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := getToken(r)
-			if token == "" {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			_, err := endpoint.Auth.Authenticate(r.Context())
-			if err != nil {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
+func ProtectedMiddleware(endpoints *endpoint.Endpoints) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reqCtx := model.NewRequestContext(c.Request.Context())
+		response := endpoints.Auth.Authenticate(reqCtx)
+		if !response.OK() {
+			Unauthorized(c, response.ErrorString())
+			c.Abort()
+			return
+		}
+		c.Next()
 	}
 }

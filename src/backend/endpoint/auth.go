@@ -1,10 +1,10 @@
 package endpoint
 
 import (
-	"context"
 	"local/model"
 	"local/service/auth"
 	"local/service/initial"
+	"local/util/logger"
 )
 
 type AuthEndpoints struct {
@@ -33,65 +33,44 @@ type GetMeRequest struct {
 	Token string `json:"token"`
 }
 
-func (e *AuthEndpoints) Authenticate(ctx context.Context) (uint, error) {
-	userID, err := e.authService.Authenticate(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	return userID, nil
+func (e *AuthEndpoints) Authenticate(reqCtx *model.RequestContext) model.Response[uint] {
+	logger.Info(reqCtx, "AuthEndpoints.Authenticate called")
+	return e.authService.Authenticate(reqCtx)
 }
 
-func (e *AuthEndpoints) GetMe(ctx context.Context) (Response[*model.User], error) {
-	user, err := e.authService.GetMe(ctx)
-	if err != nil {
-		return Response[*model.User]{Data: nil, Error: err.Error()}, nil
-	}
-	
-	return Response[*model.User]{Data: &user, Error: ""}, nil
+func (e *AuthEndpoints) GetMe(reqCtx *model.RequestContext) model.Response[*model.User] {
+	logger.Info(reqCtx, "AuthEndpoints.GetMe called")
+	return e.authService.GetMe(reqCtx)
 }
 
-func (e *AuthEndpoints) Register(ctx context.Context, request interface{}) (Response[*model.User], error) {
+func (e *AuthEndpoints) Register(reqCtx *model.RequestContext, request interface{}) model.Response[*model.User] {
 	req := request.(RegisterRequest)
-
-	user, err := e.authService.Register(ctx, req.UserName, req.Password)
-	if err != nil {
-		return Response[*model.User]{Data: nil, Error: err.Error()}, nil
-	}
-
-	return Response[*model.User]{Data: &user, Error: ""}, nil
+	logger.Info(reqCtx, "AuthEndpoints.Register called", map[string]interface{}{"username": req.UserName})
+	return e.authService.Register(reqCtx, req.UserName, req.Password)
 }
 
-func (e *AuthEndpoints) Login(ctx context.Context, request interface{}) (Response[LoginResponse], error) {
+func (e *AuthEndpoints) Login(reqCtx *model.RequestContext, request interface{}) model.Response[LoginResponse] {
 	req := request.(LoginRequest)
+	logger.Info(reqCtx, "AuthEndpoints.Login called", map[string]interface{}{"username": req.UserName})
 
-	token, err := e.authService.Login(ctx, req.UserName, req.Password)
-	if err != nil {
-		return Response[LoginResponse]{Data: nil, Error: err.Error()}, nil
+	tokenResponse := e.authService.Login(reqCtx, req.UserName, req.Password)
+	if !tokenResponse.OK() {
+		return model.ErrorArray[LoginResponse](tokenResponse.Code, tokenResponse.Message, tokenResponse.Errors)
 	}
 
-	response := LoginResponse{Token: token}
-	return Response[LoginResponse]{Data: &response, Error: ""}, nil
+	response := LoginResponse{Token: tokenResponse.Data}
+	return model.SuccessResponse(response, "Login successful")
 }
 
-func (e *AuthEndpoints) Logout(ctx context.Context, request interface{}) (Response[string], error) {
+func (e *AuthEndpoints) Logout(reqCtx *model.RequestContext, request interface{}) model.Response[string] {
 	req := request.(LogoutRequest)
-
-	err := e.authService.Logout(ctx, req.Token)
-	if err != nil {
-		return Response[string]{Data: nil, Error: err.Error()}, nil
-	}
-
-	return Response[string]{Data: nil, Error: ""}, nil
+	logger.Info(reqCtx, "AuthEndpoints.Logout called")
+	return e.authService.Logout(reqCtx, req.Token)
 }
 
-func (e *AuthEndpoints) GetUsers(ctx context.Context) (Response[[]*model.User], error) {
-	users, err := e.authService.GetUsers(ctx)
-	if err != nil {
-		return Response[[]*model.User]{Data: nil, Error: err.Error()}, nil
-	}
-
-	return Response[[]*model.User]{Data: &users, Error: ""}, nil
+func (e *AuthEndpoints) GetUsers(reqCtx *model.RequestContext) model.Response[[]*model.User] {
+	logger.Info(reqCtx, "AuthEndpoints.GetUsers called")
+	return e.authService.GetUsers(reqCtx)
 }
 
 func NewAuthEndpoints(params *initial.Service) *AuthEndpoints {
