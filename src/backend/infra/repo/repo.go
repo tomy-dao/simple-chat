@@ -8,40 +8,17 @@ import (
 	"gorm.io/gorm"
 )
 
-type RepositoryInterface interface {
-	User() UserRepo
-	Conversation() ConversationRepo
-	Participant() ParticipantRepo
-	Message() MessageRepo
-}
-
 type Repository struct {
-	db           *gorm.DB
-	user         UserRepo
-	conversation ConversationRepo
-	participant  ParticipantRepo
-	message      MessageRepo
-}
-
-func (r *Repository) User() UserRepo {
-	return r.user
-}
-
-func (r *Repository) Conversation() ConversationRepo {
-	return r.conversation
-}
-
-func (r *Repository) Participant() ParticipantRepo {
-	return r.participant
-}
-
-func (r *Repository) Message() MessageRepo {
-	return r.message
+	db              *gorm.DB
+	UserRepo        UserRepo
+	ConversationRepo ConversationRepo
+	ParticipantRepo  ParticipantRepo
+	MessageRepo      MessageRepo
 }
 
 // NewRepositoryWithDB creates a repository instance with the provided database
 // This can be used for both production and testing
-func NewRepositoryWithDB(db *gorm.DB) (RepositoryInterface, error) {
+func NewRepositoryWithDB(db *gorm.DB) (*Repository, error) {
 	// Auto migrate all models
 	err := db.AutoMigrate(
 		&model.User{},
@@ -58,22 +35,22 @@ func NewRepositoryWithDB(db *gorm.DB) (RepositoryInterface, error) {
 	conversationRepo := &conversationRepository{db: db}
 	participantRepo := &participantRepository{db: db}
 	messageRepo := &messageRepository{db: db}
-	
+
 	return &Repository{
-		db:           db,
-		user:         userRepo,
-		conversation: conversationRepo,
-		participant:  participantRepo,
-		message:      messageRepo,
+		db:              db,
+		UserRepo:        userRepo,
+		ConversationRepo: conversationRepo,
+		ParticipantRepo:  participantRepo,
+		MessageRepo:      messageRepo,
 	}, nil
 }
 
 // NewRepository creates a repository instance with MySQL connection from config
 // This is used for production
-func NewRepository() (RepositoryInterface, error) {
+func NewRepository() (*Repository, error) {
 	// Create database connection
 	dsn := config.Config.DBUser + ":" + config.Config.DBPassword + "@tcp(" + config.Config.DBHost + ":" + config.Config.DBPort + ")/" + config.Config.DBName + "?charset=utf8mb4&parseTime=True&loc=Local"
-	
+
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -81,4 +58,3 @@ func NewRepository() (RepositoryInterface, error) {
 
 	return NewRepositoryWithDB(db)
 }
-

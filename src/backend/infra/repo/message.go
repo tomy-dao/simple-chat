@@ -10,6 +10,7 @@ import (
 type MessageRepo interface {
 	Create(reqCtx *model.RequestContext, message *model.Message) model.Response[*model.Message]
 	GetByConversationID(reqCtx *model.RequestContext, conversationID uint) model.Response[[]*model.Message]
+	Count(reqCtx *model.RequestContext) (int64, error)
 }
 
 type messageRepository struct {
@@ -36,6 +37,16 @@ func (r *messageRepository) GetByConversationID(reqCtx *model.RequestContext, co
 		return model.InternalError[[]*model.Message]("Failed to get messages")
 	}
 	return model.SuccessResponse(messages, "Messages retrieved successfully")
+}
+
+func (r *messageRepository) Count(reqCtx *model.RequestContext) (int64, error) {
+	logger.Info(reqCtx, "MessageRepo.Count called")
+	var count int64
+	err := r.db.WithContext(reqCtx.Context()).Model(&model.Message{}).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func NewMessageRepository(db *gorm.DB) (MessageRepo, error) {

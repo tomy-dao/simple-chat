@@ -1,4 +1,4 @@
-package httpTransoprt
+package httpTransport
 
 import (
 	"net/http"
@@ -23,13 +23,14 @@ type APIError struct {
 
 // Error codes
 const (
-	ErrCodeValidation     = "VALIDATION_ERROR"
-	ErrCodeUnauthorized   = "UNAUTHORIZED"
-	ErrCodeForbidden     = "FORBIDDEN"
-	ErrCodeNotFound      = "NOT_FOUND"
-	ErrCodeInternal      = "INTERNAL_ERROR"
-	ErrCodeBadRequest    = "BAD_REQUEST"
-	ErrCodeConflict      = "CONFLICT"
+	ErrCodeValidation        = "VALIDATION_ERROR"
+	ErrCodeUnauthorized      = "UNAUTHORIZED"
+	ErrCodeForbidden         = "FORBIDDEN"
+	ErrCodeNotFound          = "NOT_FOUND"
+	ErrCodeInternal          = "INTERNAL_ERROR"
+	ErrCodeBadRequest        = "BAD_REQUEST"
+	ErrCodeConflict          = "CONFLICT"
+	ErrCodeRateLimitExceeded = "RATE_LIMIT_EXCEEDED"
 )
 
 // SuccessResponse returns a successful response
@@ -135,5 +136,13 @@ func Created(c *gin.Context, data interface{}, message ...string) {
 		msg = message[0]
 	}
 	SuccessResponse(c, http.StatusCreated, data, msg)
+}
+
+// TooManyRequests returns 429 Too Many Requests
+func TooManyRequests(c *gin.Context, message string) {
+	if message == "" {
+		message = "Too many requests"
+	}
+	ErrorResponse(c, http.StatusTooManyRequests, ErrCodeRateLimitExceeded, message, "")
 }
 

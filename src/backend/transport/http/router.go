@@ -1,10 +1,11 @@
-package httpTransoprt
+package httpTransport
 
 import (
 	"local/endpoint"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -56,6 +57,12 @@ func handleRouter(r *gin.Engine, endpoints *endpoint.Endpoints) {
 		})
 	})
 
+	// Prometheus metrics endpoint
+	promHandler := promhttp.Handler()
+	r.GET("/metrics", func(c *gin.Context) {
+		promHandler.ServeHTTP(c.Writer, c.Request)
+	})
+
 	// Root endpoint
 	r.GET("/", func(c *gin.Context) {
 		OK(c, gin.H{
@@ -63,6 +70,7 @@ func handleRouter(r *gin.Engine, endpoints *endpoint.Endpoints) {
 			"version": "1.0.0",
 			"endpoints": map[string]string{
 				"health":        "/health",
+				"metrics":       "/metrics",
 				"swagger":       "/swagger/index.html",
 				"register":      "/api/v1/register",
 				"login":         "/api/v1/login",
