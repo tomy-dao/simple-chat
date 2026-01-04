@@ -15,6 +15,7 @@ type ConversationRepo interface {
 	Delete(reqCtx *model.RequestContext, conversation *model.Conversation) model.Response[*model.Conversation]
 	GetByParticipant(reqCtx *model.RequestContext, userID uint) model.Response[[]*model.Conversation]
 	GetByEntityJoined(reqCtx *model.RequestContext, entityJoined string) model.Response[*model.Conversation]
+	Count(reqCtx *model.RequestContext) (int64, error)
 }
 
 type conversationRepository struct {
@@ -91,6 +92,16 @@ func (r *conversationRepository) GetByParticipant(reqCtx *model.RequestContext, 
 		return model.InternalError[[]*model.Conversation]("Failed to get conversations")
 	}
 	return model.SuccessResponse(conversations, "Conversations retrieved successfully")
+}
+
+func (r *conversationRepository) Count(reqCtx *model.RequestContext) (int64, error) {
+	logger.Info(reqCtx, "ConversationRepo.Count called")
+	var count int64
+	err := r.db.WithContext(reqCtx.Context()).Model(&model.Conversation{}).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func NewConversationRepository(db *gorm.DB) (ConversationRepo, error) {

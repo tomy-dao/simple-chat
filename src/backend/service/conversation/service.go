@@ -17,7 +17,7 @@ type ConversationService interface {
 }
 
 type conversationService struct {
-	repo repo.RepositoryInterface
+	repo *repo.Repository
 }
 
 func convertUserIdsToEntityJoined(userIds []uint) string {
@@ -43,7 +43,7 @@ func (svc *conversationService) GetConversationByUserIDs(reqCtx *model.RequestCo
 		return model.BadRequest[*model.Conversation]("At least 2 participants are required")
 	}
 
-	response := svc.repo.Conversation().GetByEntityJoined(reqCtx, convertUserIdsToEntityJoined(userIDs))
+	response := svc.repo.ConversationRepo.GetByEntityJoined(reqCtx, convertUserIdsToEntityJoined(userIDs))
 	return response
 }
 
@@ -61,7 +61,7 @@ func (svc *conversationService) CreateConversation(reqCtx *model.RequestContext,
 		UserIds: userIds,
 	}
 
-	createResponse := svc.repo.Conversation().Create(reqCtx, conversation)
+	createResponse := svc.repo.ConversationRepo.Create(reqCtx, conversation)
 	if !createResponse.OK() {
 		return createResponse
 	}
@@ -70,26 +70,26 @@ func (svc *conversationService) CreateConversation(reqCtx *model.RequestContext,
 
 	// Add participants
 	for _, userID := range userIds {
-		participantResponse := svc.repo.Participant().AddParticipantToConversation(reqCtx, createdConversation.ID, userID)
+		participantResponse := svc.repo.ParticipantRepo.AddParticipantToConversation(reqCtx, createdConversation.ID, userID)
 		if !participantResponse.OK() {
 			return model.BadRequest[*model.Conversation]("Failed to add participant to conversation")
 		}
 	}
 
 	// Return conversation with participants
-	queryResponse := svc.repo.Conversation().QueryOne(reqCtx, &model.Conversation{ID: createdConversation.ID})
+	queryResponse := svc.repo.ConversationRepo.QueryOne(reqCtx, &model.Conversation{ID: createdConversation.ID})
 	return queryResponse
 }
 
 func (svc *conversationService) GetUserConversations(reqCtx *model.RequestContext, userID uint) model.Response[[]*model.Conversation] {
 	logger.Info(reqCtx, "GetUserConversations called", map[string]interface{}{"user_id": userID})
-	response := svc.repo.Conversation().GetByParticipant(reqCtx, userID)
+	response := svc.repo.ConversationRepo.GetByParticipant(reqCtx, userID)
 	return response
 }
 
 func (svc *conversationService) GetConversationByID(reqCtx *model.RequestContext, id uint) model.Response[*model.Conversation] {
 	logger.Info(reqCtx, "GetConversationByID called", map[string]interface{}{"conversation_id": id})
-	response := svc.repo.Conversation().QueryOne(reqCtx, &model.Conversation{ID: id})
+	response := svc.repo.ConversationRepo.QueryOne(reqCtx, &model.Conversation{ID: id})
 	return response
 }
 

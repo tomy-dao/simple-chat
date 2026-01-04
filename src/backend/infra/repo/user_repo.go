@@ -18,6 +18,7 @@ type UserRepo interface {
 	Create(reqCtx *model.RequestContext, us *model.User) model.Response[*model.User]
 	Update(reqCtx *model.RequestContext, us *model.User) model.Response[*model.User]
 	Delete(reqCtx *model.RequestContext, us *model.User) model.Response[*model.User]
+	Count(reqCtx *model.RequestContext) (int64, error)
 }
 
 func (r *userRepository) QueryOne(reqCtx *model.RequestContext, user *model.User) model.Response[*model.User] {
@@ -70,5 +71,16 @@ func (r *userRepository) Delete(reqCtx *model.RequestContext, user *model.User) 
 		return model.BadRequest[*model.User]("Failed to delete user")
 	}
 	return model.SuccessResponse(user, "User deleted successfully")
+}
+
+func (r *userRepository) Count(reqCtx *model.RequestContext) (int64, error) {
+	logger.Info(reqCtx, "UserRepo.Count called")
+	var count int64
+	err := r.db.WithContext(reqCtx.Context()).Model(&model.User{}).Count(&count).Error
+	if err != nil {
+		log.Printf("Error counting users: %v", err)
+		return 0, err
+	}
+	return count, nil
 }
 

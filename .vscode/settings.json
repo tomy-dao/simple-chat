@@ -1,0 +1,11 @@
+{
+  "go.goroot": "",
+  "go.gopath": "",
+  "go.toolsEnvVars": {
+    "GOTOOLCHAIN": "auto",
+    "PATH": "/opt/homebrew/bin:/opt/homebrew/Cellar/go/1.24.3/bin:${env:PATH}"
+  },
+  "go.alternateTools": {
+    "go": "/opt/homebrew/bin/go"
+  }
+}

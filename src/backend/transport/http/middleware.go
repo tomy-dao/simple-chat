@@ -1,9 +1,11 @@
-package httpTransoprt
+package httpTransport
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"local/config"
 	"local/endpoint"
 	"local/model"
 	"strings"
@@ -93,13 +95,16 @@ func SetupMiddleware(r *gin.Engine) {
 	config.AllowOrigins = []string{"*"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"}
-	config.ExposeHeaders = []string{"Link"}
+	config.ExposeHeaders = []string{"Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"}
 	config.AllowCredentials = true
 	config.MaxAge = 12 * time.Hour
 	r.Use(cors.New(config))
 
-	// Token middleware
+	// Token middleware (must be before rate limit to populate user_id)
 	r.Use(TokenMiddleware())
+
+	// Rate limit middleware
+	r.Use(RateLimitMiddleware())
 
 	// JSON Content-Type middleware
 	r.Use(JSONContentTypeMiddleware())
@@ -128,6 +133,80 @@ func ProtectedMiddleware(endpoints *endpoint.Endpoints) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		c.Next()
+	}
+}
+
+// Global rate limiter manager instance
+var rateLimiterManager *RateLimiterManager
+
+// InitRateLimiter initializes the global rate limiter manager
+func InitRateLimiter(requestsPerMin int, burst int) {
+	rateLimiterManager = NewRateLimiterManager(requestsPerMin, burst)
+}
+
+// RateLimitMiddleware implements per-user rate limiting
+func RateLimitMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Skip rate limiting if disabled
+		if !config.Config.RateLimitEnabled {
+			c.Next()
+			return
+		}
+
+		// Skip health check and swagger routes
+		if c.Request.URL.Path == "/health" ||
+			strings.HasPrefix(c.Request.URL.Path, "/swagger") ||
+			c.Request.URL.Path == "/" {
+			c.Next()
+			return
+		}
+
+		// Determine rate limit key
+		var limiterKey string
+		reqCtx := model.NewRequestContext(c.Request.Context())
+
+		if reqCtx.UserID != 0 {
+			// Authenticated user - use user_id
+			limiterKey = fmt.Sprintf("user:%d", reqCtx.UserID)
+		} else {
+			// Unauthenticated request - use IP address
+			limiterKey = fmt.Sprintf("ip:%s", getClientIP(c))
+		}
+
+		// Get limiter for this key
+		limiter := rateLimiterManager.GetLimiter(limiterKey)
+
+		// Check if request is allowed
+		if !limiter.Allow() {
+			// Calculate reset time
+			reservation := limiter.Reserve()
+			resetTime := time.Now().Add(reservation.Delay())
+			reservation.Cancel() // Cancel the reservation
+
+			// Set rate limit headers
+			c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", config.Config.RateLimitRequestsPerMin))
+			c.Header("X-RateLimit-Remaining", "0")
+			c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", resetTime.Unix()))
+			c.Header("Retry-After", fmt.Sprintf("%d", int(reservation.Delay().Seconds())+1))
+
+			// Return 429 Too Many Requests
+			TooManyRequests(c, fmt.Sprintf("Too many requests. Please try again later. Rate limit: %d requests per minute", config.Config.RateLimitRequestsPerMin))
+			c.Abort()
+			return
+		}
+
+		// Calculate remaining requests (approximation)
+		remaining := config.Config.RateLimitBurst - 1
+		if remaining < 0 {
+			remaining = 0
+		}
+
+		// Set rate limit headers for successful requests
+		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", config.Config.RateLimitRequestsPerMin))
+		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
+		c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(time.Minute).Unix()))
+
 		c.Next()
 	}
 }

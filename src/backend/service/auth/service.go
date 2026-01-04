@@ -35,7 +35,7 @@ type AuthService interface {
 }
 
 type authService struct {
-	repo      repo.RepositoryInterface
+	repo      *repo.Repository
 	jwtSecret string
 }
 
@@ -102,7 +102,7 @@ func (svc *authService) GetMe(reqCtx *model.RequestContext) model.Response[*mode
 	}
 
 	claims := tokenResponse.Data
-	response := svc.repo.User().QueryOne(reqCtx, &model.User{ID: claims.UserID})
+	response := svc.repo.UserRepo.QueryOne(reqCtx, &model.User{ID: claims.UserID})
 	if !response.OK() {
 		return response
 	}
@@ -118,7 +118,7 @@ func (svc *authService) Register(reqCtx *model.RequestContext, userName, passwor
 		return model.BadRequest[*model.User]("Username and password are required")
 	}
 	// Check if user already exists
-	existingUserResponse := svc.repo.User().QueryOne(reqCtx, &model.User{UserName: userName})
+	existingUserResponse := svc.repo.UserRepo.QueryOne(reqCtx, &model.User{UserName: userName})
 	if existingUserResponse.OK() {
 		return model.Conflict[*model.User]("User already exists")
 	}
@@ -135,7 +135,7 @@ func (svc *authService) Register(reqCtx *model.RequestContext, userName, passwor
 		Password: string(hashedPassword),
 	}
 
-	response := svc.repo.User().Create(reqCtx, user)
+	response := svc.repo.UserRepo.Create(reqCtx, user)
 	if !response.OK() {
 		return response
 	}
@@ -152,7 +152,7 @@ func (svc *authService) Login(reqCtx *model.RequestContext, userName, password s
 	}
 
 	// Find user
-	response := svc.repo.User().QueryOne(reqCtx, &model.User{UserName: userName})
+	response := svc.repo.UserRepo.QueryOne(reqCtx, &model.User{UserName: userName})
 	if !response.OK() {
 		return model.Unauthorized[string]("Invalid credentials")
 	}
@@ -208,7 +208,7 @@ func (svc *authService) Logout(reqCtx *model.RequestContext, token string) model
 
 func (svc *authService) GetUsers(reqCtx *model.RequestContext) model.Response[[]*model.User] {
 	logger.Info(reqCtx, "GetUsers called")
-	response := svc.repo.User().QueryMany(reqCtx, &model.User{})
+	response := svc.repo.UserRepo.QueryMany(reqCtx, &model.User{})
 	return response
 }
 

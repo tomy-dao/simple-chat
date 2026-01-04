@@ -10,7 +10,7 @@ import (
 	"local/model"
 	"local/service/common"
 	"local/service/initial"
-	httpTransoprt "local/transport/http"
+	httpTransport "local/transport/http"
 	"local/util/logger"
 	"log"
 	http "net/http"
@@ -61,7 +61,7 @@ func Run() {
 }
 
 func runServer(initParams *model.InitParams, endpoints *endpoint.Endpoints) {
-	svr := httpTransoprt.MakeHttpTransport(initParams, endpoints)
+	svr := httpTransport.MakeHttpTransport(initParams, endpoints)
 	log.Printf("HTTP server listening on %s", fmt.Sprintf(":%d", config.Config.HTTPPort))
 
 	// Gin engine can be used with http.ListenAndServe or its own Run() method

@@ -1,4 +1,4 @@
-package httpTransoprt
+package httpTransport
 
 import (
 	"local/endpoint"

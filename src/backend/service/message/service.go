@@ -16,7 +16,7 @@ type MessageService interface {
 }
 
 type messageService struct {
-	repo repo.RepositoryInterface
+	repo *repo.Repository
 	client *client.Client
 	authService auth.AuthService
 	cvsSvc conversation.ConversationService
@@ -27,7 +27,7 @@ func (svc *messageService) CreateMessage(reqCtx *model.RequestContext, message *
 		"conversation_id": message.ConversationID,
 		"sender_id": message.SenderID,
 	})
-	createResponse := svc.repo.Message().Create(reqCtx, message)
+	createResponse := svc.repo.MessageRepo.Create(reqCtx, message)
 	if !createResponse.OK() {
 		return createResponse
 	}
@@ -41,7 +41,7 @@ func (svc *messageService) CreateMessage(reqCtx *model.RequestContext, message *
 
 	conversation := conversationResponse.Data
 	conversation.LastMessageID = createdMessage.ID
-	updateResponse := svc.repo.Conversation().Update(reqCtx, conversation)
+	updateResponse := svc.repo.ConversationRepo.Update(reqCtx, conversation)
 	if !updateResponse.OK() {
 		return model.BadRequest[*model.Message]("Failed to update conversation")
 	}
@@ -67,7 +67,7 @@ func (svc *messageService) CreateMessage(reqCtx *model.RequestContext, message *
 
 func (svc *messageService) GetMessagesByConversationID(reqCtx *model.RequestContext, conversationID uint) model.Response[[]*model.Message] {
 	logger.Info(reqCtx, "GetMessagesByConversationID called", map[string]interface{}{"conversation_id": conversationID})
-	response := svc.repo.Message().GetByConversationID(reqCtx, conversationID)
+	response := svc.repo.MessageRepo.GetByConversationID(reqCtx, conversationID)
 	return response
 }
 

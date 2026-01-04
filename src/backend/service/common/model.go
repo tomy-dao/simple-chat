@@ -6,6 +6,6 @@ import (
 )
 
 type Params struct {
-	Repo   repo.RepositoryInterface
+	Repo   *repo.Repository
 	Client *client.Client
 }

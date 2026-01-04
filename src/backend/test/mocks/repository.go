@@ -7,29 +7,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockRepository is a mock implementation of RepositoryInterface
+// MockRepository is a mock implementation of Repository
 type MockRepository struct {
 	mock.Mock
-}
-
-func (m *MockRepository) User() repo.UserRepo {
-	args := m.Called()
-	return args.Get(0).(repo.UserRepo)
-}
-
-func (m *MockRepository) Conversation() repo.ConversationRepo {
-	args := m.Called()
-	return args.Get(0).(repo.ConversationRepo)
-}
-
-func (m *MockRepository) Participant() repo.ParticipantRepo {
-	args := m.Called()
-	return args.Get(0).(repo.ParticipantRepo)
-}
-
-func (m *MockRepository) Message() repo.MessageRepo {
-	args := m.Called()
-	return args.Get(0).(repo.MessageRepo)
+	UserRepo        repo.UserRepo
+	ConversationRepo repo.ConversationRepo
+	ParticipantRepo  repo.ParticipantRepo
+	MessageRepo      repo.MessageRepo
 }
 
 // MockUserRepo is a mock implementation of UserRepo
@@ -170,4 +154,78 @@ func (m *MockMessageRepo) Create(reqCtx *model.RequestContext, message *model.Me
 func (m *MockMessageRepo) GetByConversationID(reqCtx *model.RequestContext, conversationID uint) model.Response[[]*model.Message] {
 	args := m.Called(reqCtx, conversationID)
 	return args.Get(0).(model.Response[[]*model.Message])
+}
+
+// Helper functions to create mocks with default return values
+// These can be used to simplify test setup when you need common default behaviors
+
+// NewMockRepositoryWithDefaults creates a MockRepository with default repo mocks
+func NewMockRepositoryWithDefaults() (*MockRepository, *MockUserRepo, *MockConversationRepo, *MockParticipantRepo, *MockMessageRepo) {
+	mockUserRepo := new(MockUserRepo)
+	mockConversationRepo := new(MockConversationRepo)
+	mockParticipantRepo := new(MockParticipantRepo)
+	mockMessageRepo := new(MockMessageRepo)
+
+	mockRepo := &MockRepository{
+		UserRepo:        mockUserRepo,
+		ConversationRepo: mockConversationRepo,
+		ParticipantRepo:  mockParticipantRepo,
+		MessageRepo:      mockMessageRepo,
+	}
+
+	return mockRepo, mockUserRepo, mockConversationRepo, mockParticipantRepo, mockMessageRepo
+}
+
+// SetupMockUserQueryOneSuccess sets up a successful QueryOne mock for UserRepo
+func SetupMockUserQueryOneSuccess(mockUserRepo *MockUserRepo, user *model.User) {
+	mockUserRepo.On("QueryOne", mock.Anything, mock.MatchedBy(func(u *model.User) bool {
+		return u.UserName == user.UserName || u.ID == user.ID
+	})).Return(model.SuccessResponse(user, "User found"))
+}
+
+// SetupMockUserQueryOneNotFound sets up a not found QueryOne mock for UserRepo
+func SetupMockUserQueryOneNotFound(mockUserRepo *MockUserRepo, userName string) {
+	mockUserRepo.On("QueryOne", mock.Anything, &model.User{UserName: userName}).
+		Return(model.NotFound[*model.User]("User not found"))
+}
+
+// SetupMockUserCreateSuccess sets up a successful Create mock for UserRepo
+func SetupMockUserCreateSuccess(mockUserRepo *MockUserRepo, user *model.User) {
+	mockUserRepo.On("Create", mock.Anything, mock.MatchedBy(func(u *model.User) bool {
+		return u.UserName == user.UserName
+	})).Return(model.SuccessResponse(user, "User created successfully"))
+}
+
+// SetupMockConversationQueryOneSuccess sets up a successful QueryOne mock for ConversationRepo
+func SetupMockConversationQueryOneSuccess(mockConversationRepo *MockConversationRepo, conversation *model.Conversation) {
+	mockConversationRepo.On("QueryOne", mock.Anything, &model.Conversation{ID: conversation.ID}).
+		Return(model.SuccessResponse(conversation, "Conversation found"))
+}
+
+// SetupMockConversationCreateSuccess sets up a successful Create mock for ConversationRepo
+func SetupMockConversationCreateSuccess(mockConversationRepo *MockConversationRepo, conversation *model.Conversation) {
+	mockConversationRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Conversation")).
+		Return(model.SuccessResponse(conversation, "Conversation created successfully"))
+}
+
+// SetupMockParticipantAddSuccess sets up a successful AddParticipantToConversation mock
+func SetupMockParticipantAddSuccess(mockParticipantRepo *MockParticipantRepo, conversationID, userID uint) {
+	mockParticipantRepo.On("AddParticipantToConversation", mock.Anything, conversationID, userID).
+		Return(model.SuccessResponse(&model.ConversationParticipant{
+			ID:             1,
+			ConversationID: conversationID,
+			UserID:         userID,
+		}, "Participant added successfully"))
+}
+
+// SetupMockMessageCreateSuccess sets up a successful Create mock for MessageRepo
+func SetupMockMessageCreateSuccess(mockMessageRepo *MockMessageRepo, message *model.Message) {
+	mockMessageRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Message")).
+		Return(model.SuccessResponse(message, "Message created successfully"))
+}
+
+// SetupMockMessageGetByConversationIDSuccess sets up a successful GetByConversationID mock
+func SetupMockMessageGetByConversationIDSuccess(mockMessageRepo *MockMessageRepo, conversationID uint, messages []*model.Message) {
+	mockMessageRepo.On("GetByConversationID", mock.Anything, conversationID).
+		Return(model.SuccessResponse(messages, "Messages retrieved successfully"))
 }

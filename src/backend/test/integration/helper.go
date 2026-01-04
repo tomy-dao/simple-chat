@@ -11,7 +11,7 @@ import (
 	"local/model"
 	"local/service/common"
 	"local/service/initial"
-	httpTransoprt "local/transport/http"
+	httpTransport "local/transport/http"
 	"net/http/httptest"
 	"testing"
 
@@ -24,7 +24,7 @@ import (
 // TestSetup contains all dependencies for integration tests
 type TestSetup struct {
 	DB        *gorm.DB
-	Repo      repo.RepositoryInterface
+	Repo      *repo.Repository
 	Endpoints *endpoint.Endpoints
 	Router    *gin.Engine
 }
@@ -67,6 +67,15 @@ func SetupTestEnvironment() (*TestSetup, error) {
 	// Setup config for testing
 	config.Config.JwtSecret = "test-jwt-secret-key-for-integration-tests"
 
+	// Setup rate limiting config for tests (with permissive defaults)
+	// Individual tests can override these values
+	if config.Config.RateLimitRequestsPerMin == 0 {
+		config.Config.RateLimitRequestsPerMin = 1000 // High default to not interfere with tests
+	}
+	if config.Config.RateLimitBurst == 0 {
+		config.Config.RateLimitBurst = 100 // High default to not interfere with tests
+	}
+
 	// Create services
 	initParams := &model.InitParams{
 		ServiceName: "test-service",
@@ -83,7 +92,7 @@ func SetupTestEnvironment() (*TestSetup, error) {
 	endpoints := endpoint.NewEndpoints(&svc)
 
 	// Create HTTP router
-	router := httpTransoprt.MakeHttpTransport(initParams, endpoints)
+	router := httpTransport.MakeHttpTransport(initParams, endpoints)
 
 	return &TestSetup{
 		DB:        db,
